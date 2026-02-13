@@ -101,6 +101,8 @@
 </head>
 <body>
 
+
+
 <div id="modal" onclick="this.style.display='none'">
     <div style="text-align:center;">
         <p>CAESAR CIPHER</p>
@@ -281,7 +283,7 @@
             container.innerHTML = `<h2>LIBRARY</h2><div class="solved-text">DD</div><button onclick="goTo('hallway')">Return</button>`;
             return;
         }
-        container.innerHTML = `<h2>LIBRARY</h2><p>MM/DD for: Arcade, After Concert, Ferris Wheel</p><input id="l1" placeholder="MM/DD"><input id="l2" placeholder="MM/DD"><input id="l3" placeholder="MM/DD"><br><button onclick="checkLib()">SUBMIT</button><button onclick="goTo('hallway')">Return</button>`;
+        container.innerHTML = `<h2>LIBRARY</h2><p>MM/DD for: Arcade, After Concert, Ferris Wheel</p><input id="l1" placeholder="_ _ / _ _"><input id="l2" placeholder="_ _ / _ _"><input id="l3" placeholder="_ _ / _ _"><br><button onclick="checkLib()">SUBMIT</button><button onclick="goTo('hallway')">Return</button>`;
         window.checkLib = () => {
             if(document.getElementById('l1').value==='12/23' && document.getElementById('l2').value==='01/10' && document.getElementById('l3').value==='01/31') {
                 state.solved.push('library'); render();
@@ -310,10 +312,57 @@
         };
     }
 
-    function renderGameRoom(c) {
+function renderGameRoom(c) {
         state.discovered.push('door4');
-        if(state.solved.includes('game')) { c.innerHTML = `<h2>GAME ROOM</h2><div class="solved-text">W</div><button onclick="goTo('hallway')">Return</button>`; return; }
-        c.innerHTML = `<h2>GAME ROOM</h2><p>🟦 🔴 🟪</p><input id="gi"><button onclick="if(document.getElementById('gi').value==='102'){state.solved.push('game');render();}else alert('Nope')">SUBMIT</button><br><button onclick="goTo('hallway')">Return</button>`;
+        if(state.solved.includes('game')) { 
+            c.innerHTML = `<h2>GAME ROOM</h2><div class="solved-text">W</div><button onclick="goTo('hallway')">Return</button>`; 
+            return; 
+        }
+        
+        c.innerHTML = `
+            <h2>GAME ROOM</h2>
+            <p>A chill hangs in the air of this enchanted parlor, filled with interesting knicknacks and games. In the center of the room, a legendary board game sits atop a pedestal, its pieces seemingly moving on their own as if waiting for something.</p>
+            
+            <div style="margin-bottom: 20px;">
+                <img src="images/samurai-edited.png" alt="Samurai" style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--md-outline);">
+            </div>
+            
+            <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 20px;">
+                <svg width="45" height="45" viewBox="0 0 100 100">
+                    <rect x="15" y="15" width="70" height="70" fill="#2196f3" />
+                </svg>
+
+                <svg width="45" height="45" viewBox="0 0 100 100" 
+                     style="cursor: pointer;" 
+                     onclick="window.open('https://wyrmbergames.wordpress.com/the-games-n-z/samurai-the-card-game/#:~:text=Victory%20Conditions,winning%20markers%2C%20wins.', '_blank')">
+                    <circle cx="50" cy="50" r="40" fill="#f44336" />
+                </svg>
+
+                <svg width="45" height="45" viewBox="0 0 100 100">
+                    <polygon points="50,15 90,85 10,85" fill="#8e44ad" />
+                </svg>
+            </div>
+
+            <input id="gi" type="number" placeholder="Enter Code">
+            <br>
+            <button onclick="checkGameMove()">SUBMIT</button>
+            <br>
+            <button class="secondary" onclick="goTo('hallway')">Return</button>
+        `;
+
+        window.checkGameMove = () => {
+            const val = document.getElementById('gi').value;
+            if(val === '102') {
+                state.solved.push('game');
+                render();
+            } else {
+                const mysteries = [
+                    "The samurai watches in silence; nothing happens.",
+                    "The geometric alignment is off; the spirits do not answer."
+                ];
+                alert(mysteries[Math.floor(Math.random() * mysteries.length)]);
+            }
+        };
     }
 
     function renderChemistry(c) {
