@@ -255,19 +255,46 @@
         };
     }
 
-    function renderSupplyCloset(container) {
+function renderSupplyCloset(container) {
         state.discovered.push('door8');
+
+        // Check if the player already has the item
         if (state.inventory.includes('matches')) {
-            container.innerHTML = `<h2>SUPPLY CLOSET</h2><p>You have already taken the matches from here.</p><button onclick="goTo('hallway')">Return</button>`;
+            container.innerHTML = `
+                <h2>SUPPLY CLOSET</h2>
+                <p>The narrow room is quiet now, smelling of cedar and old floor wax. The shelf where the matches sat is now empty.</p>
+                <button onclick="goTo('hallway')">Return to Hallway</button>`;
             return;
         }
-        container.innerHTML = `<h2>SUPPLY CLOSET</h2><p>Move two matches to make the highest number:</p><img src="https://via.placeholder.com/300x150?text=MATCHSTICK+PUZZLE" style="margin:10px;"><br><input id="sc-in" type="number"><button onclick="checkSC()">SUBMIT</button><br><button onclick="goTo('hallway')">Return</button>`;
+
+        // Render the unsolved state
+        container.innerHTML = `
+            <h2>SUPPLY CLOSET</h2>
+            <p>This cramped space is packed with cleaning supplies and forgotten linens. Tucked behind a heavy bucket, you find a box of matches, but it is stuck.</p>
+            
+            <div style="margin: 20px 0;">
+                <img src="images/matches.png" alt="Matchstick Puzzle" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--md-outline);">
+            </div>
+
+            <p>There is at least one number above 50000 you can make by moving two matches. What is one of those numbers?</p>
+            
+            <input id="sc-in" type="number" placeholder="Enter the number">
+            <br>
+            <button onclick="checkSC()">SUBMIT</button>
+            <br>
+            <button class="secondary" onclick="goTo('hallway')">Return to Hallway</button>`;
+
+        // Puzzle logic
         window.checkSC = () => {
-            if(document.getElementById('sc-in').value === '81151') {
+            const val = document.getElementById('sc-in').value;
+            // Accepts both 51181 and 81151 based on your requirements
+            if(val === '51181' || val === '81151') {
                 state.inventory.push('matches');
-                alert("Correct! You grabbed a box of matches.");
-                render();
-            } else { alert("Not quite."); }
+                alert("THe box of matches become unstuck, so you take it. Might come in handy later.");
+                render(); // Re-render to show the "taken" state
+            } else { 
+                alert("The matchbox remains stuck. Maybe that's not the right number."); 
+            }
         };
     }
 
