@@ -367,13 +367,13 @@ function renderLibrary(container) {
             container.innerHTML = `<h2>OLD MAN'S CHAMBERS</h2><p>Locked keyhole.</p>${state.inventory.includes('key') ? '<button onclick="state.chamberUnlocked=true; render();">Use Golden Key</button>' : '<p>You need the Golden Key. Finish the other rooms.</p>'}<button onclick="goTo('hallway')">Return</button>`;
         } else {
             if(!state.inventory.includes('cipher')) state.inventory.push('cipher');
-            container.innerHTML = `<h2>INSIDE CHAMBERS</h2><p>You rummage the desk and find the Caesar Cipher!</p><button onclick="goTo('hallway')">Return</button>`;
+            container.innerHTML = `<h2>INSIDE CHAMBERS</h2><p>You rummage the desk and find the Caesar Cipher!</p><button onclick="goTo('hallway')">Return to Hallway</button>`;
         }
     }
 
     function renderDoor1(container) {
         state.discovered.push('door1');
-        container.innerHTML = `<h2>MAIN DOOR</h2><input id="final" placeholder="CODE"><button onclick="checkFinal()">ESCAPE</button><br><button onclick="goTo('hallway')">Return</button>`;
+        container.innerHTML = `<h2>MAIN DOOR</h2><input id="final" placeholder="CODE"><button onclick="checkFinal()">ESCAPE</button><br><button onclick="goTo('hallway')">Return to Hallway</button>`;
         window.checkFinal = () => {
             if(document.getElementById('final').value.toUpperCase() === 'MATCHA') {
                 alert("THE DOOR SWINGS OPEN! YOU ARE FREE!");
@@ -385,7 +385,7 @@ function renderLibrary(container) {
 function renderGameRoom(c) {
         state.discovered.push('door4');
         if(state.solved.includes('game')) { 
-            c.innerHTML = `<h2>GAME ROOM</h2><div class="solved-text">W</div><button onclick="goTo('hallway')">Return</button>`; 
+            c.innerHTML = `<h2>GAME ROOM</h2><div class="solved-text">W</div><button onclick="goTo('hallway')">Return to Hallway</button>`; 
             return; 
         }
         
@@ -417,7 +417,7 @@ function renderGameRoom(c) {
             <br>
             <button onclick="checkGameMove()">SUBMIT</button>
             <br>
-            <button class="secondary" onclick="goTo('hallway')">Return</button>
+            <button class="secondary" onclick="goTo('hallway')">Return to Hallway</button>
         `;
 
         window.checkGameMove = () => {
@@ -435,37 +435,95 @@ function renderGameRoom(c) {
         };
     }
 
-    function renderChemistry(c) {
+function renderChemistry(c) {
         state.discovered.push('door6');
-        if(state.solved.includes('chem')) { c.innerHTML = `<h2>CHEMISTRY</h2><div class="solved-text">F</div><button onclick="goTo('hallway')">Return</button>`; return; }
-        c.innerHTML = `<h2>CHEMISTRY</h2><div id="b1" class="beaker"></div><div id="b2" class="beaker"></div><br>
-        <button onclick="mix('red')">RED</button><button onclick="mix('blue')">BLUE</button><button onclick="mix('yellow')">YELLOW</button><button onclick="mix('white')">WHITE</button>
-        <br><button onclick="checkChem()">SUBMIT</button><button onclick="state.beakers=[];render();">RESET</button><br><button onclick="goTo('hallway')">Return</button>`;
+        
+        if(state.solved.includes('chem')) { 
+            c.innerHTML = `<h2>CHEMISTRY</h2><div class="solved-text">F</div><button onclick="goTo('hallway')">Return to Hallway</button>`; 
+            return; 
+        }
+
+        c.innerHTML = `
+            <h2>CHEMISTRY</h2>
+            <p>The Old Man's laboratory. A weird smell fills the air, which you realize you probably should breathe in for too long...</p>
+            
+            <div class="beaker-container" style="display: flex; justify-content: center; gap: 30px; margin: 20px 0;">
+                <div id="b1" class="beaker" style="cursor: pointer;" onclick="openChemModal('images/purple.png')"></div>
+                <div id="b2" class="beaker" style="cursor: pointer;" onclick="openChemModal('images/orange.jpg')"></div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <button onclick="mix('red')" style="background:#f44336; color:white; border:none;">RED</button>
+                <button onclick="mix('blue')" style="background:#2196f3; color:white; border:none;">BLUE</button>
+                <button onclick="mix('yellow')" style="background:#ffeb3b; color:black; border:none;">YELLOW</button>
+                <button onclick="mix('white')" style="background:#ffffff; color:black; border:none; border: 1px solid #ccc;">WHITE</button>
+            </div>
+
+            <button onclick="checkChem()">SUBMIT</button>
+            <button class="secondary" onclick="state.beakers=[];render();">RESET</button>
+            <br>
+            <button class="secondary" onclick="goTo('hallway')">Return to Hallway</button>`;
+
         let current = [];
         window.mix = (col) => {
+            if (state.beakers.length >= 2) return; 
             current.push(col);
+            
             if(current.length === 2) {
                 const s = current.sort().join('');
                 let res = 'gray';
-                if(s === 'bluered') res = 'purple';
-                if(s === 'redyellow') res = 'orange';
+
+                // --- Comprehensive Mixology Logic ---
+                
+                // Self-Mixing
+                if (s === 'redred') res = 'red';
+                else if (s === 'blueblue') res = 'blue';
+                else if (s === 'yellowyellow') res = 'yellow';
+                else if (s === 'whitewhite') res = 'white';
+
+                // Primary + Primary (Secondary Colors)
+                else if (s === 'bluered') res = 'purple';
+                else if (s === 'redyellow') res = 'orange';
+                else if (s === 'blueyellow') res = 'green';
+
+                // Color + White (Tints)
+                else if (s === 'redwhite') res = 'pink';
+                else if (s === 'bluewhite') res = 'skyblue';
+                else if (s === 'whiteyellow') res = '#fff9c4'; // Lighter yellow
+
                 state.beakers.push(res);
                 current = [];
                 render();
             }
         };
+
+        // Render filled beakers
         if(state.beakers[0]) document.getElementById('b1').style.background = state.beakers[0];
         if(state.beakers[1]) document.getElementById('b2').style.background = state.beakers[1];
+
         window.checkChem = () => {
-            if(state.beakers[0] === 'purple' && state.beakers[1] === 'orange') { state.solved.push('chem'); render(); }
-            else { alert("Fizzle..."); state.beakers=[]; render(); }
+            if(state.beakers[0] === 'purple' && state.beakers[1] === 'orange') { 
+                state.solved.push('chem'); 
+                render(); 
+            } else { 
+                alert("The mixture boils over into a dark sludge. Start again."); 
+                state.beakers = []; 
+                render(); 
+            }
+        };
+
+        window.openChemModal = (src) => {
+            const modal = document.getElementById('modal');
+            const modalImg = modal.querySelector('img');
+            modalImg.src = src;
+            modal.style.display = 'grid';
         };
     }
 
     function renderStatueRoom(c) {
         state.discovered.push('door7');
-        if(state.solved.includes('statue')) { c.innerHTML = `<h2>STATUE ROOM</h2><div class="solved-text">K</div><button onclick="goTo('hallway')">Return</button>`; return; }
-        c.innerHTML = `<h2>STATUE ROOM</h2><div class="statue-grid">${state.statues.map((r,i)=>`<div onclick="state.statues[${i}]=(state.statues[${i}]+90)%360;render()" class="muse" style="transform:rotate(${r}deg)">🗽</div>`).join('')}</div><button onclick="checkStat()">SUBMIT</button><br><button onclick="goTo('hallway')">Return</button>`;
+        if(state.solved.includes('statue')) { c.innerHTML = `<h2>STATUE ROOM</h2><div class="solved-text">K</div><button onclick="goTo('hallway')">Return to Hallway</button>`; return; }
+        c.innerHTML = `<h2>STATUE ROOM</h2><div class="statue-grid">${state.statues.map((r,i)=>`<div onclick="state.statues[${i}]=(state.statues[${i}]+90)%360;render()" class="muse" style="transform:rotate(${r}deg)">🗽</div>`).join('')}</div><button onclick="checkStat()">SUBMIT</button><br><button onclick="goTo('hallway')">Return to Hallway</button>`;
         window.checkStat = () => {
             if(state.statues[0]===180 && state.statues[1]===0 && state.statues[2]===90 && state.statues[3]===0) { state.solved.push('statue'); render(); }
             else alert("Cold.");
