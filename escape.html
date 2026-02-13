@@ -22,16 +22,52 @@
             min-height: 100vh;
             margin: 0;
             line-height: 1.6;
+            overflow: hidden;
         }
 
         #game-container {
             width: 90%;
-            max-width: 600px;
+            max-width: 650px;
             padding: 40px;
             border: 1px solid var(--border);
             text-align: center;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+            background: #0d0d0d;
         }
+
+        /* Inventory UI */
+        #inventory-bar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .inv-item {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            background: #1a1a1a;
+            font-size: 1.2rem;
+        }
+        .inv-item:hover { border-color: var(--accent); }
+
+        /* Modal for Cipher */
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        #modal img { max-width: 80%; border: 2px solid var(--accent); }
 
         button {
             background: transparent;
@@ -44,11 +80,8 @@
             margin: 10px;
             transition: 0.3s;
         }
-
-        button:hover {
-            background: var(--text-color);
-            color: var(--bg-color);
-        }
+        button:hover { background: var(--text-color); color: var(--bg-color); }
+        button:disabled { border-color: #333; color: #333; cursor: not-allowed; }
 
         input {
             background: #1a1a1a;
@@ -59,353 +92,268 @@
             text-align: center;
         }
 
-        .hidden { display: none; }
-        .solved-text { color: var(--accent); font-weight: bold; font-size: 2em; margin: 20px 0; }
-        .hint { font-size: 0.8em; color: #666; margin-top: 20px; }
-        
-        .beaker {
-            display: inline-block;
-            width: 50px;
-            height: 80px;
-            border: 2px solid #ccc;
-            border-top: none;
-            border-radius: 0 0 10px 10px;
-            margin: 10px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .statue-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .muse { cursor: pointer; transition: transform 0.3s; width: 60px; }
+        .solved-text { color: var(--accent); font-weight: bold; font-size: 2.5em; margin: 10px 0; }
+        .beaker { display: inline-block; width: 40px; height: 60px; border: 2px solid #ccc; border-top: none; border-radius: 0 0 8px 8px; margin: 5px; }
+        .statue-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+        .muse { cursor: pointer; transition: transform 0.3s; font-size: 2rem; }
+        .darkness { background: black; color: #222; padding: 50px; }
     </style>
 </head>
 <body>
 
-<div id="game-container">
+<div id="modal" onclick="this.style.display='none'">
+    <div style="text-align:center;">
+        <p>CAESAR CIPHER</p>
+        <img src="https://via.placeholder.com/400x400?text=CAESAR+CIPHER+IMAGE" alt="Cipher">
+        <p style="font-size:0.8em;">(Click anywhere to close)</p>
     </div>
+</div>
+
+<div id="game-container">
+    <div id="inventory-bar"></div>
+    <div id="content"></div>
+</div>
 
 <script>
-    // --- GAME STATE ---
     let state = {
         currentPage: 'home',
-        discovered: [], // List of door IDs visited
-        solved: [],     // List of room IDs solved
-        hasKey: false,
+        discovered: ['door5'],
+        solved: [], 
+        inventory: [], // 'matches', 'cipher', 'key'
         chamberUnlocked: false,
-        beakers: [],
-        statues: [0, 0, 0, 0] // Rotations: 0, 90, 180, 270
+        torchesLit: false,
+        statues: [0, 0, 0, 0],
+        beakers: []
     };
 
-    // Load progress
-    const savedState = localStorage.getItem('halsey_escape_save');
-    if (savedState) state = JSON.parse(savedState);
+    // --- Persistence ---
+    const loadProgress = () => {
+        const saved = localStorage.getItem('halsey_escape_v2');
+        if (saved) state = JSON.parse(saved);
+    };
+    const save = () => {
+        // Logic check: If Door 3, 4, 6, 7 are solved, grant the key automatically
+        const required = ['library', 'game', 'chem', 'statue'];
+        const hasAll = required.every(r => state.solved.includes(r));
+        if (hasAll && !state.inventory.includes('key')) {
+            state.inventory.push('key');
+            alert("With the four rooms complete, a golden key materializes in your hand!");
+        }
+        localStorage.setItem('halsey_escape_v2', JSON.stringify(state));
+        updateInventoryUI();
+    };
 
-    function save() {
-        localStorage.setItem('halsey_escape_save', JSON.stringify(state));
-    }
+    const resetGame = () => {
+        if(confirm("Are you sure you want to reset all progress?")) {
+            localStorage.removeItem('halsey_escape_v2');
+            location.reload();
+        }
+    };
 
-    const container = document.getElementById('game-container');
+    // --- Inventory UI ---
+    const updateInventoryUI = () => {
+        const bar = document.getElementById('inventory-bar');
+        bar.innerHTML = '';
+        state.inventory.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'inv-item';
+            if(item === 'matches') { div.innerText = '🔥'; div.onclick = () => alert("A box of wooden matches."); }
+            if(item === 'cipher') { div.innerText = '📜'; div.onclick = () => document.getElementById('modal').style.display='flex'; }
+            if(item === 'key') { div.innerText = '🔑'; div.onclick = () => alert("The Master Key to the Old Man's Chambers."); }
+            bar.appendChild(div);
+        });
+    };
 
-    // --- ROUTER ---
+    // --- Navigation ---
+    const goTo = (pg) => { state.currentPage = pg; render(); };
+
     function render() {
-        container.innerHTML = '';
-        
+        const content = document.getElementById('content');
+        content.innerHTML = '';
+        window.onkeydown = null; // Clean up listeners
+
         switch(state.currentPage) {
-            case 'home': renderHome(); break;
-            case 'intro': renderIntro(); break;
-            case 'hallway': renderHallway(); break;
-            case 'cell': renderCell(); break;
-            case 'door1': renderMainDoor(); break;
-            case 'door2_pre': renderChamberOutside(); break;
-            case 'door2_in': renderChamberInside(); break;
-            case 'door3': renderLibrary(); break;
-            case 'door4': renderGameRoom(); break;
-            case 'door6': renderChemistry(); break;
-            case 'door7': renderStatueRoom(); break;
+            case 'home':
+                content.innerHTML = `<h1>HALSEY</h1><p>Escape the Old Man's Castle</p><button onclick="goTo('intro')">Begin</button>`;
+                break;
+            case 'intro':
+                content.innerHTML = `<h2>THE CAPTURE</h2><p>Taken to the high chambers... escape is the only option.</p><button onclick="goTo('cell')">Start</button>`;
+                break;
+            case 'hallway':
+                renderHallway(content);
+                break;
+            case 'cell':
+                renderCell(content);
+                break;
+            case 'door1':
+                renderDoor1(content);
+                break;
+            case 'door2':
+                renderDoor2(content);
+                break;
+            case 'door3':
+                renderLibrary(content);
+                break;
+            case 'door4':
+                renderGameRoom(content);
+                break;
+            case 'door6':
+                renderChemistry(content);
+                break;
+            case 'door7':
+                renderStatueRoom(content);
+                break;
+            case 'door8':
+                renderSupplyCloset(content);
+                break;
         }
         save();
     }
 
-    // --- PAGES ---
+    // --- Page Logic Functions ---
 
-    function renderHome() {
-        container.innerHTML = `
-            <h1>HALSEY</h1>
-            <p>An Escape Room Adventure</p>
-            <button onclick="goTo('intro')">Begin</button>
-        `;
-    }
-
-    function renderIntro() {
-        container.innerHTML = `
-            <h2>THE CAPTURE</h2>
-            <p>"You're too mean," the Old Man spat. The lyrics of 'Castle' echo in your head as the guards drag you through the stone corridors.</p>
-            <p>He refuses to put you in the dungeons. Instead, he demands you be taken to the cell within his own chambers. He will deal with you later.</p>
-            <button onclick="goTo('cell')">Enter the Cell</button>
-        `;
-    }
-
-    function renderHallway() {
-        state.currentPage = 'hallway';
-        const getLabel = (id, name) => state.discovered.includes(id) ? `Door ${id.replace('door','')} (${name})` : `Door ${id.replace('door','')}`;
+    function renderHallway(container) {
+        const doors = [
+            { id: 'door1', name: 'Main Door' },
+            { id: 'door2', name: "Old Man's Chambers" },
+            { id: 'door3', name: 'Library' },
+            { id: 'door4', name: 'Game Room' },
+            { id: 'door5', name: 'Cell' },
+            { id: 'door6', name: 'Chemistry Room' },
+            { id: 'door7', name: 'Statue Room' },
+            { id: 'door8', name: 'Supply Closet' }
+        ];
         
-        container.innerHTML = `
-            <h2>THE HALLWAY</h2>
-            <p>A dim corridor. Six doors line the walls, and one massive gate stands at the end.</p>
-            <div style="display: flex; justify-content: space-around; text-align: left;">
-                <div>
-                    <p><a href="#" onclick="goTo('door1')">${getLabel('door1', 'Main Exit')}</a></p>
-                    <p><a href="#" onclick="goTo('door3')">${getLabel('door3', 'Library')}</a></p>
-                    <p><a href="#" onclick="goTo('door5')">Door 5 (The Cell)</a></p>
-                </div>
-                <div>
-                    <p><a href="#" onclick="goTo('door2_pre')">${getLabel('door2', 'Old Man\'s Chambers')}</a></p>
-                    <p><a href="#" onclick="goTo('door4')">${getLabel('door4', 'Game Room')}</a></p>
-                    <p><a href="#" onclick="goTo('door6')">${getLabel('door6', 'Chemistry Room')}</a></p>
-                    <p><a href="#" onclick="goTo('door7')">${getLabel('door7', 'Statue Room')}</a></p>
-                </div>
-            </div>
-        `;
+        container.innerHTML = `<h2>THE HALLWAY</h2><div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left;"></div><br><button onclick="resetGame()" style="font-size:0.6em; margin-top:50px;">Reset Progress</button>`;
+        const grid = container.querySelector('div');
+        
+        doors.forEach(d => {
+            const isDiscovered = state.discovered.includes(d.id) || d.id === 'door5';
+            const label = isDiscovered ? `Door ${d.id.replace('door','')} (${d.name})` : `Door ${d.id.replace('door','')}`;
+            const link = document.createElement('p');
+            link.innerHTML = `<a href="#" style="color:white" onclick="goTo('${d.id === 'door5' ? 'cell' : d.id}')">${label}</a>`;
+            grid.appendChild(link);
+        });
     }
 
-    function renderCell() {
-        state.discovered.push('door5');
+    function renderCell(container) {
         if (state.solved.includes('cell')) {
-            container.innerHTML = `<h2>THE CELL</h2><div class="solved-text">P</div><p>The letter appeared magically on the stone floor as the lock clicked open.</p><button onclick="goTo('hallway')">To the Hallway</button>`;
+            container.innerHTML = `<h2>THE CELL</h2><div class="solved-text">P</div><button onclick="goTo('hallway')">Return</button>`;
             return;
         }
-
         let inputs = [];
-        container.innerHTML = `
-            <h2>THE CELL</h2>
-            <p>A guard walked away, dropping a scrap of paper...</p>
-            <pre style="text-align:left; display:inline-block; font-size:0.8em;">
-1. Castle
-2. "Hold Me ____"
-3. "New Americana"
-4. "Drive"
-4. "Drive"
-6. "Colors"
-7. "Coming ____"
-8. "Haunting"
-9. "_______"
-10. "Young God"
-11. "Ghost"</pre>
-            <p>The magical lock awaits a sequence...</p>
-            <div id="cell-display" style="min-height:30px; border:1px solid #444; margin:10px; padding:5px;"></div>
-            <button onclick="checkCell()">SUBMIT</button>
-            <button onclick="renderCell()">RESET</button>
-        `;
-
-        const display = document.getElementById('cell-display');
-        window.onkeydown = (e) => {
-            if (state.currentPage !== 'cell') return;
-            inputs.push(e.key);
-            display.innerText = inputs.join(' + ');
+        container.innerHTML = `<h2>THE CELL</h2><p>Tracklist Note Found...</p><pre style="font-size:0.7em; background:#111;">1. Castle\n2. "Hold Me ____"\n3. "New Americana"\n4. "Drive"\n4. "Drive"\n...</pre><div id="cd" style="height:30px; border:1px solid #444; margin:10px;"></div><button onclick="checkCell()">SUBMIT</button><button onclick="goTo('cell')">RESET</button>`;
+        window.onkeydown = (e) => { 
+            inputs.push(e.key); 
+            document.getElementById('cd').innerText = inputs.join(' '); 
         };
-
         window.checkCell = () => {
-            // Sequence: ArrowDown, ArrowDown, Control
-            const secret = inputs.slice(-3).join(',');
-            if (secret === "ArrowDown,ArrowDown,Control") {
-                state.solved.push('cell');
-                window.onkeydown = null;
-                render();
-            } else {
-                alert("The lock remains cold.");
-                inputs = [];
-                display.innerText = "";
-            }
+            if (inputs.slice(-3).join(',') === "ArrowDown,ArrowDown,Control") { state.solved.push('cell'); render(); }
+            else { alert("Nothing."); inputs=[]; render(); }
         };
     }
 
-    function renderMainDoor() {
-        state.discovered.push('door1');
-        container.innerHTML = `
-            <h2>MAIN EXIT</h2>
-            <p>A massive iron-bound door with an alphabet lock.</p>
-            <input type="text" id="main-code" placeholder="5 LETTERS" maxlength="6">
-            <button onclick="if(document.getElementById('main-code').value.toUpperCase()==='MATCHA'){ alert('YOU ESCAPED!'); location.reload(); } else { alert('Locked.'); }">SUBMIT</button>
-            <br><button onclick="goTo('hallway')">Return</button>
-        `;
+    function renderSupplyCloset(container) {
+        state.discovered.push('door8');
+        if (state.inventory.includes('matches')) {
+            container.innerHTML = `<h2>SUPPLY CLOSET</h2><p>You have already taken the matches from here.</p><button onclick="goTo('hallway')">Return</button>`;
+            return;
+        }
+        container.innerHTML = `<h2>SUPPLY CLOSET</h2><p>Move two matches to make the highest number:</p><img src="https://via.placeholder.com/300x150?text=MATCHSTICK+PUZZLE" style="margin:10px;"><br><input id="sc-in" type="number"><button onclick="checkSC()">SUBMIT</button><br><button onclick="goTo('hallway')">Return</button>`;
+        window.checkSC = () => {
+            if(document.getElementById('sc-in').value === '81151') {
+                state.inventory.push('matches');
+                alert("Correct! You grabbed a box of matches.");
+                render();
+            } else { alert("Not quite."); }
+        };
     }
 
-    function renderChamberOutside() {
-        state.discovered.push('door2');
-        if (state.chamberUnlocked) { goTo('door2_in'); return; }
-        container.innerHTML = `
-            <h2>OLD MAN'S CHAMBERS</h2>
-            <p>The door is locked tight. A strange keyhole glimmers.</p>
-            <div style="font-size: 50px;">[ 🗝️ ]</div>
-            ${state.hasKey ? '<button onclick="unlockChamber()">Use Key</button>' : '<p>You need a key.</p>'}
-            <br><button onclick="goTo('hallway')">Return</button>
-        `;
-    }
-
-    window.unlockChamber = () => {
-        alert("The key turns smoothly. The door is unlocked.");
-        state.chamberUnlocked = true;
-        render();
-    };
-
-    function renderChamberInside() {
-        container.innerHTML = `
-            <h2>INSIDE THE CHAMBERS</h2>
-            <p>Rummaging through the desk, you find a hidden parchment.</p>
-            <div style="border: 1px solid #555; padding: 20px; margin: 20px;">
-                [PLACEHOLDER: CAESAR CIPHER JPEG]
-                <p style="font-size:0.7em;">(Imagine a cryptic wheel here)</p>
-            </div>
-            <p>You also find a <b>Small Brass Key</b> on the desk!</p>
-            <button onclick="state.hasKey=true; alert('Key picked up!'); render();" ${state.hasKey ? 'disabled' : ''}>Pick up Key</button>
-            <br><button onclick="goTo('hallway')">Return</button>
-        `;
-    }
-
-    function renderLibrary() {
+    function renderLibrary(container) {
         state.discovered.push('door3');
+        if (!state.torchesLit) {
+            container.innerHTML = `<div class="darkness">It is pitch black. You can see the faint outline of torches on the wall.</div>
+            ${state.inventory.includes('matches') ? '<button onclick="state.torchesLit=true; render();">Light Torches</button>' : '<p>If only you had a way to light them...</p>'}
+            <button onclick="goTo('hallway')">Leave</button>`;
+            return;
+        }
         if (state.solved.includes('library')) {
             container.innerHTML = `<h2>LIBRARY</h2><div class="solved-text">DD</div><button onclick="goTo('hallway')">Return</button>`;
             return;
         }
-        container.innerHTML = `
-            <h2>LIBRARY</h2>
-            <p>Books and records everywhere. Three photos sit by a record player.</p>
-            <div>
-                <input id="l1" placeholder="MM/DD">
-                <input id="l2" placeholder="MM/DD">
-                <input id="l3" placeholder="MM/DD">
-            </div>
-            <button onclick="checkLibrary()">SUBMIT</button>
-            <br><button onclick="goTo('hallway')">Return</button>
-        `;
-        window.checkLibrary = () => {
-            if (document.getElementById('l1').value === '12/23' && 
-                document.getElementById('l2').value === '01/10' && 
-                document.getElementById('l3').value === '01/31') {
-                state.solved.push('library');
-                render();
-            } else { alert("Nothing happens."); }
+        container.innerHTML = `<h2>LIBRARY</h2><p>MM/DD for: Arcade, After Concert, Ferris Wheel</p><input id="l1" placeholder="MM/DD"><input id="l2" placeholder="MM/DD"><input id="l3" placeholder="MM/DD"><br><button onclick="checkLib()">SUBMIT</button><button onclick="goTo('hallway')">Return</button>`;
+        window.checkLib = () => {
+            if(document.getElementById('l1').value==='12/23' && document.getElementById('l2').value==='01/10' && document.getElementById('l3').value==='01/31') {
+                state.solved.push('library'); render();
+            } else alert("Locked.");
         };
     }
 
-    function renderGameRoom() {
+    function renderDoor2(container) {
+        state.discovered.push('door2');
+        if(!state.chamberUnlocked) {
+            container.innerHTML = `<h2>OLD MAN'S CHAMBERS</h2><p>Locked keyhole.</p>${state.inventory.includes('key') ? '<button onclick="state.chamberUnlocked=true; render();">Use Golden Key</button>' : '<p>You need the Golden Key. Finish the other rooms.</p>'}<button onclick="goTo('hallway')">Return</button>`;
+        } else {
+            if(!state.inventory.includes('cipher')) state.inventory.push('cipher');
+            container.innerHTML = `<h2>INSIDE CHAMBERS</h2><p>You rummage the desk and find the Caesar Cipher!</p><button onclick="goTo('hallway')">Return</button>`;
+        }
+    }
+
+    function renderDoor1(container) {
+        state.discovered.push('door1');
+        container.innerHTML = `<h2>MAIN DOOR</h2><input id="final" placeholder="CODE"><button onclick="checkFinal()">ESCAPE</button><br><button onclick="goTo('hallway')">Return</button>`;
+        window.checkFinal = () => {
+            if(document.getElementById('final').value.toUpperCase() === 'MATCHA') {
+                alert("THE DOOR SWINGS OPEN! YOU ARE FREE!");
+                resetGame();
+            } else alert("It won't budge.");
+        };
+    }
+
+    function renderGameRoom(c) {
         state.discovered.push('door4');
-        if (state.solved.includes('game')) {
-            container.innerHTML = `<h2>GAME ROOM</h2><div class="solved-text">W</div><button onclick="goTo('hallway')">Return</button>`;
-            return;
-        }
-        container.innerHTML = `
-            <h2>GAME ROOM</h2>
-            <div style="margin:20px;">[PLACEHOLDER: BOARD GAME IMAGE]</div>
-            <div style="font-size:20px;">🟦 🔴 🟪</div>
-            <input type="number" id="game-input" placeholder="3 numbers">
-            <button onclick="if(document.getElementById('game-input').value==='102'){ state.solved.push('game'); render(); } else { alert('Nothing happens.'); }">SUBMIT</button>
-            <br><button onclick="goTo('hallway')">Return</button>
-        `;
+        if(state.solved.includes('game')) { c.innerHTML = `<h2>GAME ROOM</h2><div class="solved-text">W</div><button onclick="goTo('hallway')">Return</button>`; return; }
+        c.innerHTML = `<h2>GAME ROOM</h2><p>🟦 🔴 🟪</p><input id="gi"><button onclick="if(document.getElementById('gi').value==='102'){state.solved.push('game');render();}else alert('Nope')">SUBMIT</button><br><button onclick="goTo('hallway')">Return</button>`;
     }
 
-    function renderChemistry() {
+    function renderChemistry(c) {
         state.discovered.push('door6');
-        if (state.solved.includes('chem')) {
-            container.innerHTML = `<h2>CHEMISTRY ROOM</h2><div class="solved-text">F</div><button onclick="goTo('hallway')">Return</button>`;
-            return;
-        }
-        
-        const colors = { 'white':'#fff', 'yellow':'#ff0', 'red':'#f00', 'blue':'#00f', 'purple':'#800080', 'orange':'#ffa500' };
-        
-        container.innerHTML = `
-            <h2>CHEMISTRY ROOM</h2>
-            <div id="b1" class="beaker"></div>
-            <div id="b2" class="beaker"></div>
-            <div>
-                <button onclick="mix('white')" style="background:white;"></button>
-                <button onclick="mix('yellow')" style="background:yellow;"></button>
-                <button onclick="mix('red')" style="background:red;"></button>
-                <button onclick="mix('blue')" style="background:blue;"></button>
-            </div>
-            <button onclick="state.beakers=[]; render();">RESET</button>
-            <button onclick="checkChem()">SUBMIT</button>
-            <br><button onclick="goTo('hallway')">Return</button>
-        `;
-
-        let currentMix = [];
-        window.mix = (c) => {
-            currentMix.push(c);
-            if(currentMix.length === 2) {
-                let result = 'gray';
-                const m = currentMix.sort().join('');
-                if(m === 'bluered') result = 'purple';
-                if(m === 'redyellow') result = 'orange';
-                state.beakers.push(result);
-                currentMix = [];
-                updateBeakers();
+        if(state.solved.includes('chem')) { c.innerHTML = `<h2>CHEMISTRY</h2><div class="solved-text">F</div><button onclick="goTo('hallway')">Return</button>`; return; }
+        c.innerHTML = `<h2>CHEMISTRY</h2><div id="b1" class="beaker"></div><div id="b2" class="beaker"></div><br>
+        <button onclick="mix('red')">RED</button><button onclick="mix('blue')">BLUE</button><button onclick="mix('yellow')">YELLOW</button><button onclick="mix('white')">WHITE</button>
+        <br><button onclick="checkChem()">SUBMIT</button><button onclick="state.beakers=[];render();">RESET</button><br><button onclick="goTo('hallway')">Return</button>`;
+        let current = [];
+        window.mix = (col) => {
+            current.push(col);
+            if(current.length === 2) {
+                const s = current.sort().join('');
+                let res = 'gray';
+                if(s === 'bluered') res = 'purple';
+                if(s === 'redyellow') res = 'orange';
+                state.beakers.push(res);
+                current = [];
+                render();
             }
-        }
-
-        const updateBeakers = () => {
-            if(state.beakers[0]) document.getElementById('b1').style.background = state.beakers[0];
-            if(state.beakers[1]) document.getElementById('b2').style.background = state.beakers[1];
         };
-        updateBeakers();
-
+        if(state.beakers[0]) document.getElementById('b1').style.background = state.beakers[0];
+        if(state.beakers[1]) document.getElementById('b2').style.background = state.beakers[1];
         window.checkChem = () => {
-            if(state.beakers[0] === 'purple' && state.beakers[1] === 'orange') {
-                state.solved.push('chem');
-                render();
-            } else { alert("The mixture fizzles out."); state.beakers=[]; render(); }
-        }
+            if(state.beakers[0] === 'purple' && state.beakers[1] === 'orange') { state.solved.push('chem'); render(); }
+            else { alert("Fizzle..."); state.beakers=[]; render(); }
+        };
     }
 
-    function renderStatueRoom() {
+    function renderStatueRoom(c) {
         state.discovered.push('door7');
-        if (state.solved.includes('statue')) {
-            container.innerHTML = `<h2>STATUE ROOM</h2><div class="solved-text">K</div><button onclick="goTo('hallway')">Return</button>`;
-            return;
-        }
-
-        container.innerHTML = `
-            <h2>STATUE ROOM</h2>
-            <p>"LONELY IS THE MUSE"</p>
-            <div class="statue-grid">
-                ${state.statues.map((rot, i) => `
-                    <div onclick="rotateStatue(${i})">
-                        <div class="muse" style="transform: rotate(${rot}deg)">🗽</div>
-                        <div style="font-size:0.6em;">Men at: ${i === 0 ? '0°, 90°' : i === 1 ? '180°, 270°' : i === 2 ? '0°, 180°' : '90°, 270°'}</div>
-                    </div>
-                `).join('')}
-            </div>
-            <button onclick="checkStatues()">SUBMIT</button>
-            <br><button onclick="goTo('hallway')">Return</button>
-        `;
-
-        window.rotateStatue = (i) => {
-            state.statues[i] = (state.statues[i] + 90) % 360;
-            render();
-        };
-
-        window.checkStatues = () => {
-            // Check if facing away from specific degrees per corner logic
-            const s = state.statues;
-            if (s[0] === 180 && s[1] === 0 && s[2] === 90 && s[3] === 0) {
-                state.solved.push('statue');
-                render();
-            } else { alert("The statues remain cold."); }
+        if(state.solved.includes('statue')) { c.innerHTML = `<h2>STATUE ROOM</h2><div class="solved-text">K</div><button onclick="goTo('hallway')">Return</button>`; return; }
+        c.innerHTML = `<h2>STATUE ROOM</h2><div class="statue-grid">${state.statues.map((r,i)=>`<div onclick="state.statues[${i}]=(state.statues[${i}]+90)%360;render()" class="muse" style="transform:rotate(${r}deg)">🗽</div>`).join('')}</div><button onclick="checkStat()">SUBMIT</button><br><button onclick="goTo('hallway')">Return</button>`;
+        window.checkStat = () => {
+            if(state.statues[0]===180 && state.statues[1]===0 && state.statues[2]===90 && state.statues[3]===0) { state.solved.push('statue'); render(); }
+            else alert("Cold.");
         };
     }
 
-    // --- UTILS ---
-    window.goTo = (page) => {
-        state.currentPage = page;
-        render();
-    };
-
+    loadProgress();
     render();
 </script>
 </body>
