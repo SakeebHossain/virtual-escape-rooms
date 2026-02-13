@@ -298,23 +298,66 @@ function renderSupplyCloset(container) {
         };
     }
 
-    function renderLibrary(container) {
+function renderLibrary(container) {
         state.discovered.push('door3');
+        
+        // Handling the dark state
         if (!state.torchesLit) {
-            container.innerHTML = `<div class="darkness">It is pitch black. You can see the faint outline of torches on the wall.</div>
-            ${state.inventory.includes('matches') ? '<button onclick="state.torchesLit=true; render();">Light Torches</button>' : '<p>If only you had a way to light them...</p>'}
-            <button onclick="goTo('hallway')">Leave</button>`;
+            container.innerHTML = `
+                <div class="darkness">It is pitch black. You can see the faint outline of torches on the wall.</div>
+                ${state.inventory.includes('matches') ? 
+                    '<button onclick="state.torchesLit=true; render();">Light Torches</button>' : 
+                    '<p>If only you had a way to light them...</p>'}
+                <button onclick="goTo('hallway')">Leave</button>`;
             return;
         }
+
+        // Handling the solved state
         if (state.solved.includes('library')) {
-            container.innerHTML = `<h2>LIBRARY</h2><div class="solved-text">DD</div><button onclick="goTo('hallway')">Return</button>`;
+            container.innerHTML = `
+                <h2>LIBRARY</h2>
+                <div class="solved-text">DD</div>
+                <p>You wait, then out of nowhere, ink magically write to the page. It shows two letter.</p>
+                <button onclick="goTo('hallway')">Return to Hallway</button>`;
             return;
         }
-        container.innerHTML = `<h2>LIBRARY</h2><p>MM/DD for: Arcade, After Concert, Ferris Wheel</p><input id="l1" placeholder="_ _ / _ _"><input id="l2" placeholder="_ _ / _ _"><input id="l3" placeholder="_ _ / _ _"><br><button onclick="checkLib()">SUBMIT</button><button onclick="goTo('hallway')">Return</button>`;
+
+        // Main Puzzle State
+        container.innerHTML = `
+            <h2>LIBRARY</h2>
+            <p>This is the Old Man's record keeping room, with hundreds of old books and logs. On his mahogany table sits an incomplete record:</p>
+            
+            <div style="display: flex; justify-content: space-around; align-items: flex-start; gap: 10px; margin-top: 20px;">
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <img src="images/date1.png" style="width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 4px; border: 1px solid var(--md-outline); margin-bottom: 10px;">
+                    <input id="l1" placeholder="MM/DD" style="width: 90%; font-size: 0.9rem;">
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <img src="images/date2.png" style="width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 4px; border: 1px solid var(--md-outline); margin-bottom: 10px;">
+                    <input id="l2" placeholder="MM/DD" style="width: 90%; font-size: 0.9rem;">
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <img src="images/date3.png" style="width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 4px; border: 1px solid var(--md-outline); margin-bottom: 10px;">
+                    <input id="l3" placeholder="MM/DD" style="width: 90%; font-size: 0.9rem;">
+                </div>
+            </div>
+
+            <br>
+            <button onclick="checkLib()">SUBMIT</button>
+            <br>
+            <button class="secondary" onclick="goTo('hallway')">Return to Hallway</button>`;
+
         window.checkLib = () => {
-            if(document.getElementById('l1').value==='12/23' && document.getElementById('l2').value==='01/10' && document.getElementById('l3').value==='01/31') {
-                state.solved.push('library'); render();
-            } else alert("Locked.");
+            const d1 = document.getElementById('l1').value;
+            const d2 = document.getElementById('l2').value;
+            const d3 = document.getElementById('l3').value;
+
+            if(d1 === '1223' && d2 === '0110' && d3 === '0131') {
+                state.solved.push('library'); 
+                render();
+            } else {
+                alert("You wait in silence, but nothing appears to have happened.");
+            }
         };
     }
 
