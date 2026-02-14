@@ -138,7 +138,7 @@
         const hasAll = required.every(r => state.solved.includes(r));
         if (hasAll && !state.inventory.includes('key')) {
             state.inventory.push('key');
-            alert("With the four rooms complete, a golden key materializes in your hand!");
+            alert("A metallic clink echoes behind you. A key has fallen from a hidden wall compartment -- you quickly snatch it up");
         }
         localStorage.setItem('halsey_escape_v2', JSON.stringify(state));
         updateInventoryUI();
@@ -414,12 +414,38 @@ function renderLibrary(container) {
 
     function renderDoor2(container) {
         state.discovered.push('door2');
+
+        // State 1: Door is Locked
         if(!state.chamberUnlocked) {
-            container.innerHTML = `<h2>OLD MAN'S CHAMBERS</h2><p>Locked keyhole.</p>${state.inventory.includes('key') ? '<button onclick="state.chamberUnlocked=true; render();">Use Golden Key</button>' : '<p>You need the Golden Key. Finish the other rooms.</p>'}<button onclick="goTo('hallway')">Return</button>`;
-        } else {
-            if(!state.inventory.includes('cipher')) state.inventory.push('cipher');
-            container.innerHTML = `<h2>INSIDE CHAMBERS</h2><p>You rummage the desk and find the Caesar Cipher!</p><button onclick="goTo('hallway')">Return to Hallway</button>`;
-        }
+            container.innerHTML = `
+                <h2>OLD MAN'S CHAMBERS</h2>
+                
+                <p>The heavy oak door is reinforced with iron bands. A curious, ornate keyhole is set into the wall beside the frame.</p>
+                
+                <div style="margin: 30px 0;">
+                    <img src="images/keyhole.png" alt="Ornate Keyhole" style="width: 160px; height: auto; filter: drop-shadow(0px 6px 8px rgba(0,0,0,0.6));">
+                </div>
+
+                ${state.inventory.includes('key') ? 
+                    '<button onclick="state.chamberUnlocked=true; render();">Use Key</button>' : 
+                    '<p>The door is locked tight. It seems you will need a specific key to gain entry to his private quarters.</p>'}
+                
+                <button class="secondary" onclick="goTo('hallway')">Return to Hallway</button>`;
+            return;
+        } 
+
+        // State 2: Inside the Chambers
+        container.innerHTML = `
+            <h2>INSIDE CHAMBERS</h2>
+            <p>The room is dimly lit, smelling of old leather and expensive tobacco. You quickly begin rummaging through the clutter of a lifetime of secrets. On his mahogany desk, you find the Old Man's diary. A single page is marked: <strong>"In case of emergency."</strong></p>
+            
+            <div style="margin: 20px 0;">
+                <img src="images/google-photos.jpg" alt="Emergency Cipher" style="max-width: 100%; height: auto; border-radius: 8px; border: 2px solid var(--md-outline); box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+            </div>
+
+            <p>It's a familiar symbol...</p>
+            
+            <button onclick="goTo('hallway')">Return to Hallway</button>`;
     }
 
     function renderDoor1(container) {
