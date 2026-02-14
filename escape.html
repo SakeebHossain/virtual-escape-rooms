@@ -213,28 +213,66 @@
 
     // --- Page Logic Functions ---
 
-    function renderHallway(container) {
-        const doors = [
-            { id: 'door1', name: 'Main Door' },
+function renderHallway(container) {
+        // Define the specific layout positions
+        const topDoor = { id: 'door1', name: 'Main Door' };
+        const bottomDoor = { id: 'door5', name: 'Cell' };
+        
+        // Split the remaining 6 doors into left and right wings
+        const leftWing = [
             { id: 'door2', name: "Old Man's Chambers" },
             { id: 'door3', name: 'Library' },
-            { id: 'door4', name: 'Game Room' },
-            { id: 'door5', name: 'Cell' },
+            { id: 'door4', name: 'Game Room' }
+        ];
+        const rightWing = [
             { id: 'door6', name: 'Chemistry Room' },
             { id: 'door7', name: 'Statue Room' },
             { id: 'door8', name: 'Supply Closet' }
         ];
-        
-        container.innerHTML = `<h2>HALLWAY</h2><div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left;"></div><br><button onclick="resetGame()" style="font-size:0.6em; margin-top:50px;">Reset Progress</button>`;
-        const grid = container.querySelector('div');
-        
-        doors.forEach(d => {
+
+        container.innerHTML = `
+            <h2>THE GREAT HALLWAY</h2>
+            <p style="font-style: italic; color: #888; margin-bottom: 30px;">The corridor stretches out, dimly lit by flickering torches.</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: center; max-width: 800px; margin: 0 auto;">
+                
+                <div style="grid-column: 2; padding: 10px; border-radius: 4px;">
+                    ${renderDoorLink(topDoor)}
+                </div>
+
+                <div style="grid-column: 1; grid-row: 2 / 5; display: flex; flex-direction: column; gap: 40px; text-align: right;">
+                    ${leftWing.map(d => renderDoorLink(d)).join('')}
+                </div>
+
+                <div style="grid-column: 3; grid-row: 2 / 5; display: flex; flex-direction: column; gap: 40px; text-align: left;">
+                    ${rightWing.map(d => renderDoorLink(d)).join('')}
+                </div>
+
+                <div style="grid-column: 2; grid-row: 5; padding: 10px; border-radius: 4px;">
+                    ${renderDoorLink(bottomDoor)}
+                </div>
+
+            </div>
+
+            <br>
+            <button onclick="resetGame()" style="font-size:0.6em; margin-top:50px; opacity: 0.5;">Restart Game</button>
+        `;
+
+        // Helper function to handle discovery logic and labels
+        function renderDoorLink(d) {
             const isDiscovered = state.discovered.includes(d.id) || d.id === 'door5';
-            const label = isDiscovered ? `Door ${d.id.replace('door','')} (${d.name})` : `Door ${d.id.replace('door','')}`;
-            const link = document.createElement('p');
-            link.innerHTML = `<a href="#" style="color:white" onclick="goTo('${d.id === 'door5' ? 'cell' : d.id}')">${label}</a>`;
-            grid.appendChild(link);
-        });
+            const label = isDiscovered ? d.name.toUpperCase() : "DOOR";
+            const target = d.id === 'door1' ? 'door1' : (d.id === 'door5' ? 'cell' : d.id);
+            
+            return `
+                <p style="margin: 0;">
+                    <a href="#" 
+                       style="color: ${isDiscovered ? 'white' : '#555'}; text-decoration: none; font-weight: bold; letter-spacing: 1px;" 
+                       onclick="goTo('${target}')">
+                       ${label}
+                    </a>
+                </p>`;
+        }
     }
 
 function renderCell(container) {
@@ -454,7 +492,7 @@ function renderDoor1(container) {
         // Main Door - Locked View
         container.innerHTML = `
             <div class="final-gate">
-                <h2>THE MAIN EXIT</h2>
+                <h2>THE MAIN DOOR</h2>
                 <div style="margin: 20px 0;">
                     <img src="images/main_door.jpg" alt="The Great Exit" style="width: 100%; max-width: 500px; border-radius: 8px; border: 3px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
                 </div>
@@ -474,31 +512,37 @@ function renderDoor1(container) {
         window.checkFinal = () => {
             const input = document.getElementById('final').value.toUpperCase().trim();
             
-            if(input === 'MATCHA') {
-                // Victory Sequence: Play the Video
-                container.innerHTML = `
-                    <div style="background: #000; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                        <video id="doorVideo" width="100%" style="max-width: 800px; border: 2px solid gold;">
-                            <source src="images/main_door_opens.mp4" type="video/mp4">
-                            Your browser does not support the video tag.
-                        </video>
-                        <h1 id="freedomText" style="display: none; color: gold; margin-top: 20px; animation: fadeIn 2s;">YOU ARE FREE!</h1>
+if(input === 'MATCHA') {
+        // Victory Sequence
+            container.innerHTML = `
+                    <div style="background: #000; width: 100%; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px;">
+                        
+                        <h1 style="color: gold; margin-bottom: 20px; font-size: 3rem; text-shadow: 0 0 10px rgba(255,215,0,0.5); animation: fadeIn 1.5s ease-out forwards;">
+                            YOU ARE FREE!
+                        </h1>
+
+                        <img src="images/main_door_opens.gif" alt="The Great Exit" style="width: 100%; max-width: 500px; border-radius: 8px; border: 3px solid #444; box-shadow: 0 0 20px rgba(255,215,0,0.4);">
+                        
+                        <div style="margin-top: 20px; text-align: center;">
+                            <a href="https://will-you-b-my-valentine.vercel.app" target="_blank" style="color: #00ff00; text-decoration: underline; font-family: monospace; font-size: 1.4rem; display: block; animation: fadeIn 3s ease-out forwards;">
+                                (open me)
+                            </a>
+                        </div>
+
+                        <button onclick="resetGame()" style="margin-top: 50px; background: transparent; border: 1px solid #333; color: #555; font-size: 0.7rem; cursor: pointer; animation: fadeIn 5s ease-out forwards;">
+                            Restart Game
+                        </button>
+
+                        <style>
+                            @keyframes fadeIn {
+                                from { opacity: 0; transform: translateY(5px); }
+                                to { opacity: 1; transform: translateY(0); }
+                            }
+                        </style>
                     </div>
                 `;
-
-                const video = document.getElementById('doorVideo');
-                video.play();
-
-                // Show the "Free" text and reset the game after the video ends
-                video.onended = () => {
-                    document.getElementById('freedomText').style.display = 'block';
-                    setTimeout(() => {
-                        alert("Congratulations! You've escaped the Old Man's Castle.");
-                        resetGame();
-                    }, 3000);
-                };
             } else {
-                alert("The door remains cold and unmoving.");
+                alert("The padlock prevents you from opening the heavy doors.");
             }
         };
     }
