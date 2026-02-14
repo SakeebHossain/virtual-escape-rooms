@@ -101,7 +101,10 @@
 </head>
 <body>
 
-
+<audio id="bg-music" loop>
+    <source src="assets/castle_instrumental.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio>
 
 <div id="modal" onclick="this.style.display='none'">
     <div style="text-align:center;">
@@ -126,6 +129,19 @@
         torchesLit: false,
         statues: [0, 0, 0, 0],
         beakers: []
+    };
+
+    window.startExperience = () => {
+        const music = document.getElementById('bg-music');
+        
+        // Attempt to play music
+        music.play().catch(error => {
+            console.log("Autoplay prevented. Music will start after next interaction.");
+        });
+
+        // Reset intro step and go to intro
+        state.introStep = 0; 
+        goTo('intro');
     };
 
     // --- Persistence ---
@@ -176,8 +192,10 @@
 
 switch(state.currentPage) {
             case 'home':
-                content.innerHTML = `<h1>BADLANDS</h1><p>Escape the Old Man's Castle</p>
-                <button onclick="state.introStep = 0; goTo('intro')">Begin</button>`;
+                content.innerHTML = `
+                    <h1>BADLANDS</h1>
+                    <p>Escape the Old Man's Castle</p>
+                    <button onclick="startExperience()">Begin</button>`;
                 break;
             case 'intro':
                 renderIntro(content);
@@ -364,7 +382,7 @@ function renderSupplyCloset(container) {
             <p>This cramped space is packed with cleaning supplies and forgotten linens. Tucked behind a heavy bucket, you find a box of matches, but it is stuck.</p>
             
             <div style="margin: 20px 0;">
-                <img src="images/matches.png" alt="Matchstick Puzzle" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--md-outline);">
+                <img src="assets/matches.png" alt="Matchstick Puzzle" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--md-outline);">
             </div>
 
             <p>There is at least one number above 50000 you can make by moving two matches. What is one of those numbers?</p>
@@ -420,15 +438,15 @@ function renderLibrary(container) {
             
             <div style="display: flex; justify-content: space-around; align-items: flex-start; gap: 10px; margin-top: 20px;">
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                    <img src="images/date1.png" style="width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 4px; border: 1px solid var(--md-outline); margin-bottom: 10px;">
+                    <img src="assets/date1.png" style="width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 4px; border: 1px solid var(--md-outline); margin-bottom: 10px;">
                     <input id="l1" placeholder="MM/DD" style="width: 90%; font-size: 0.9rem;">
                 </div>
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                    <img src="images/date2.png" style="width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 4px; border: 1px solid var(--md-outline); margin-bottom: 10px;">
+                    <img src="assets/date2.png" style="width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 4px; border: 1px solid var(--md-outline); margin-bottom: 10px;">
                     <input id="l2" placeholder="MM/DD" style="width: 90%; font-size: 0.9rem;">
                 </div>
                 <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
-                    <img src="images/date3.png" style="width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 4px; border: 1px solid var(--md-outline); margin-bottom: 10px;">
+                    <img src="assets/date3.png" style="width: 100%; aspect-ratio: 2/3; object-fit: cover; border-radius: 4px; border: 1px solid var(--md-outline); margin-bottom: 10px;">
                     <input id="l3" placeholder="MM/DD" style="width: 90%; font-size: 0.9rem;">
                 </div>
             </div>
@@ -492,7 +510,7 @@ function renderLibrary(container) {
                 <p>The heavy oak door is reinforced with iron bands. A curious, ornate keyhole is set into the wall beside the frame.</p>
                 
                 <div style="margin: 30px 0;">
-                    <img src="images/keyhole.png" alt="Ornate Keyhole" style="width: 160px; height: auto; filter: drop-shadow(0px 6px 8px rgba(0,0,0,0.6));">
+                    <img src="assets/keyhole.png" alt="Ornate Keyhole" style="width: 160px; height: auto; filter: drop-shadow(0px 6px 8px rgba(0,0,0,0.6));">
                 </div>
 
                 ${state.inventory.includes('key') ? 
@@ -509,7 +527,7 @@ function renderLibrary(container) {
             <p>The room is dimly lit, smelling of old leather and expensive tobacco. You quickly begin rummaging through the clutter of a lifetime of secrets. On his mahogany desk, you find the Old Man's diary. A single page is marked: <strong>"In case of emergency."</strong></p>
             
             <div style="margin: 20px 0;">
-                <img src="images/google-photos.jpg" alt="Emergency Cipher" style="max-width: 100%; height: auto; border-radius: 8px; border: 2px solid var(--md-outline); box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+                <img src="assets/google-photos.jpg" alt="Emergency Cipher" style="max-width: 100%; height: auto; border-radius: 8px; border: 2px solid var(--md-outline); box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
             </div>
 
             <p>It's a familiar symbol...</p>
@@ -525,7 +543,7 @@ function renderDoor1(container) {
             <div class="final-gate">
                 <h2>THE MAIN DOOR</h2>
                 <div style="margin: 20px 0;">
-                    <img src="images/main_door.jpg" alt="The Great Exit" style="width: 100%; max-width: 500px; border-radius: 8px; border: 3px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
+                    <img src="assets/main_door.jpg" alt="The Great Exit" style="width: 100%; max-width: 500px; border-radius: 8px; border: 3px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
                 </div>
                 
                 <p>The path to freedom is sealed by a massive stone gate. It feels like it's waiting for a specific word.</p>
@@ -552,7 +570,7 @@ if(input === 'MATCHA') {
                             YOU ARE FREE!
                         </h1>
 
-                        <img src="images/main_door_opens.gif" alt="The Great Exit" style="width: 100%; max-width: 500px; border-radius: 8px; border: 3px solid #444; box-shadow: 0 0 20px rgba(255,215,0,0.4);">
+                        <img src="assets/main_door_opens.gif" alt="The Great Exit" style="width: 100%; max-width: 500px; border-radius: 8px; border: 3px solid #444; box-shadow: 0 0 20px rgba(255,215,0,0.4);">
                         
                         <div style="margin-top: 20px; text-align: center;">
                             <a href="https://will-you-b-my-valentine.vercel.app" target="_blank" style="color: #00ff00; text-decoration: underline; font-family: monospace; font-size: 1.4rem; display: block; animation: fadeIn 3s ease-out forwards;">
@@ -600,7 +618,7 @@ function renderGameRoom(c) {
             <p>A chill hangs in the air of this enchanted parlor, filled with interesting knicknacks and games. In the center of the room, a legendary board game sits atop a pedestal, its pieces seemingly moving on their own as if waiting for something.</p>
             
             <div style="margin-bottom: 20px;">
-                <img src="images/samurai-edited.png" alt="Samurai" style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--md-outline);">
+                <img src="assets/samurai-edited.png" alt="Samurai" style="max-width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--md-outline);">
             </div>
             
             <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 20px;">
@@ -664,8 +682,8 @@ if(state.solved.includes('chem')) {
             <p>The Old Man's laboratory. A weird smell fills the air, which you realize you probably should breathe in for too long...</p>
             
             <div class="beaker-container" style="display: flex; justify-content: center; gap: 30px; margin: 20px 0;">
-                <div id="b1" class="beaker" style="cursor: pointer;" onclick="openChemModal('images/purple.png')"></div>
-                <div id="b2" class="beaker" style="cursor: pointer;" onclick="openChemModal('images/orange.jpg')"></div>
+                <div id="b1" class="beaker" style="cursor: pointer;" onclick="openChemModal('assets/purple.png')"></div>
+                <div id="b2" class="beaker" style="cursor: pointer;" onclick="openChemModal('assets/orange.jpg')"></div>
             </div>
 
             <div style="margin-bottom: 20px;">
@@ -759,7 +777,7 @@ function renderStatueRoom(c) {
                 ${state.statues.map((rotation, i) => `
                     <div class="statue-group" style="position: relative; width: 280px; height: 280px; background: rgba(255,255,255,0.01); border-radius: 50%;">
                         ${renderMen(menConfig[i])}
-                        <img src="images/muse.png" 
+                        <img src="assets/muse.png" 
                              onclick="state.statues[${i}]=(state.statues[${i}]+90)%360; render();" 
                              style="position: absolute; top: 90px; left: 90px; width: 100px; transform: rotate(${rotation}deg); cursor: pointer; transition: transform 0.5s ease;">
                     </div>
@@ -770,7 +788,7 @@ function renderStatueRoom(c) {
 
         function renderMen(list) {
             const p = { N: "top:-20px;left:110px", S: "bottom:-20px;left:110px", W: "top:110px;left:-20px", E: "top:110px;right:-20px" };
-            return list.map(dir => `<img src="images/man.png" style="position:absolute; width:60px; ${p[dir]}; filter:grayscale(100%); opacity:0.7;">`).join('');
+            return list.map(dir => `<img src="assets/man.png" style="position:absolute; width:60px; ${p[dir]}; filter:grayscale(100%); opacity:0.7;">`).join('');
         }
 
         window.checkStat = () => {
