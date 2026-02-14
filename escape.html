@@ -118,6 +118,7 @@
 <script>
     let state = {
         currentPage: 'home',
+        introStep: 0,
         discovered: ['door5'],
         solved: [], 
         inventory: [], // 'matches', 'cipher', 'key'
@@ -173,12 +174,13 @@
         content.innerHTML = '';
         window.onkeydown = null; // Clean up listeners
 
-        switch(state.currentPage) {
+switch(state.currentPage) {
             case 'home':
-                content.innerHTML = `<h1>HALSEY</h1><p>Escape the Old Man's Castle</p><button onclick="goTo('intro')">Begin</button>`;
+                content.innerHTML = `<h1>BADLANDS</h1><p>Escape the Old Man's Castle</p>
+                <button onclick="state.introStep = 0; goTo('intro')">Begin</button>`;
                 break;
             case 'intro':
-                content.innerHTML = `<h2>THE CAPTURE</h2><p>Taken to the high chambers... escape is the only option.</p><button onclick="goTo('cell')">Start</button>`;
+                renderIntro(content);
                 break;
             case 'hallway':
                 renderHallway(content);
@@ -448,6 +450,35 @@ function renderLibrary(container) {
                 alert("You wait in silence, but nothing appears to have happened.");
             }
         };
+    }
+
+    function renderIntro(container) {
+        // Part 1: The Rebellion
+        if (state.introStep === 0) {
+            container.innerHTML = `
+                <h2>THE RISE</h2>
+                <p>Since the Old Man's reign began, the Badlands have never been the same. Many have tried before you to overthrow him, but each one of those movements struggled due to sabotage and infighting, and were ultimately handily crushed by the Old Man's regime.</p>
+                <p>That is, until you came along. You are the bright new leader of a new rebel cause, one more powerful than any before it. The people of the Badlands rally behind you, united like they never have been before, calling you their <strong>Queen</strong>.</p>
+                <p>The Old Man, of course, would not stand for this. The moment he heard murmurs of your movement, he demanded his army to search for you, night and day. You manage to evade their search for weeks, working on organizing an attack on Old Man’s castle like never attempted before. However on the eve of the operation, you find yourself surrounded by the Old Man's soldiers.</p>
+                <p>Before you can even think about running, a sweet smelling cloth is held forcefully against your face. In an instant, you blank.</p>
+                <button onclick="state.introStep = 1; render();">Next</button>
+            `;
+        } 
+        // Part 2: The Capture
+        else {
+            container.innerHTML = `
+                <h2>THE CAPTURE</h2>
+                <p>You awake to armored hands, clamping around your arms like iron. They drag you through torch-lit corridors reeking of old stone and iron, your boots scraping defiance against the floor. Ahead, the throne room doors groan open just enough to reveal him: <strong>the Old Man</strong>, enthroned in shadow on black marble steps.</p>
+                <p>You shout at him in defiance.</p>
+                <blockquote style="font-style: italic; color: #8e44ad; border-left: 3px solid #8e44ad; padding-left: 15px; margin: 20px 0; text-align: left;">
+                    "Hmph! We finally meet and that’s how you greet me? That's exactly why you're in this mess in the first place. You probably should have kept your pretty mouth shut."
+                </blockquote>
+                <p>He leans forward, staring you down menacingly. Without breaking eye contact with you he says, “take her upstairs. To the cell in my chambers. I’ll deal with her myself… later.”</p>
+                <p>Before you can protest, the guards yank you back up, hauling you up winding stairs past barred windows. A heavy iron door crashes open. You’re thrown inside.</p>
+                <p><strong>You are in the tower cell of the Old Man’s Castle.</strong></p>
+                <button onclick="goTo('cell')">Start Escape</button>
+            `;
+        }
     }
 
     function renderDoor2(container) {
