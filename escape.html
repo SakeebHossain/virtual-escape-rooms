@@ -225,7 +225,7 @@
             { id: 'door8', name: 'Supply Closet' }
         ];
         
-        container.innerHTML = `<h2>THE HALLWAY</h2><div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left;"></div><br><button onclick="resetGame()" style="font-size:0.6em; margin-top:50px;">Reset Progress</button>`;
+        container.innerHTML = `<h2>HALLWAY</h2><div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; text-align:left;"></div><br><button onclick="resetGame()" style="font-size:0.6em; margin-top:50px;">Reset Progress</button>`;
         const grid = container.querySelector('div');
         
         doors.forEach(d => {
@@ -448,21 +448,75 @@ function renderLibrary(container) {
             <button onclick="goTo('hallway')">Return to Hallway</button>`;
     }
 
-    function renderDoor1(container) {
+function renderDoor1(container) {
         state.discovered.push('door1');
-        container.innerHTML = `<h2>MAIN DOOR</h2><input id="final" placeholder="CODE"><button onclick="checkFinal()">ESCAPE</button><br><button onclick="goTo('hallway')">Return to Hallway</button>`;
+
+        // Main Door - Locked View
+        container.innerHTML = `
+            <div class="final-gate">
+                <h2>THE MAIN EXIT</h2>
+                <div style="margin: 20px 0;">
+                    <img src="images/main_door.jpg" alt="The Great Exit" style="width: 100%; max-width: 500px; border-radius: 8px; border: 3px solid #444; box-shadow: 0 0 20px rgba(0,0,0,0.8);">
+                </div>
+                
+                <p>The path to freedom is sealed by a massive stone gate. It feels like it's waiting for a specific word.</p>
+                
+                <div style="margin: 20px 0;">
+                    <input id="final" placeholder="ENTER CODE" style="text-align: center; font-size: 1.2rem; padding: 10px; width: 200px; background: #000; color: #0f0; border: 1px solid #333;">
+                </div>
+
+                <button onclick="checkFinal()" style="background: var(--md-primary); color: white; padding: 10px 30px;">ESCAPE</button>
+                <br>
+                <button class="secondary" onclick="goTo('hallway')">Return to Hallway</button>
+            </div>
+        `;
+
         window.checkFinal = () => {
-            if(document.getElementById('final').value.toUpperCase() === 'MATCHA') {
-                alert("THE DOOR SWINGS OPEN! YOU ARE FREE!");
-                resetGame();
-            } else alert("It won't budge.");
+            const input = document.getElementById('final').value.toUpperCase().trim();
+            
+            if(input === 'MATCHA') {
+                // Victory Sequence: Play the Video
+                container.innerHTML = `
+                    <div style="background: #000; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                        <video id="doorVideo" width="100%" style="max-width: 800px; border: 2px solid gold;">
+                            <source src="images/main_door_opens.mp4" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                        <h1 id="freedomText" style="display: none; color: gold; margin-top: 20px; animation: fadeIn 2s;">YOU ARE FREE!</h1>
+                    </div>
+                `;
+
+                const video = document.getElementById('doorVideo');
+                video.play();
+
+                // Show the "Free" text and reset the game after the video ends
+                video.onended = () => {
+                    document.getElementById('freedomText').style.display = 'block';
+                    setTimeout(() => {
+                        alert("Congratulations! You've escaped the Old Man's Castle.");
+                        resetGame();
+                    }, 3000);
+                };
+            } else {
+                alert("The door remains cold and unmoving.");
+            }
         };
     }
 
 function renderGameRoom(c) {
         state.discovered.push('door4');
         if(state.solved.includes('game')) { 
-            c.innerHTML = `<h2>GAME ROOM</h2><div class="solved-text">W</div><button onclick="goTo('hallway')">Return to Hallway</button>`; 
+            c.innerHTML = `
+                <h2>GAME ROOM</h2>
+                <div class="solved-text">W</div>
+                <p>You calculate the scores and dole out the token to each side. Magically, all the cards begin to rearrange by themselves, into a shape of... a letter.</p>
+                <button onclick="goTo('hallway')">Return to Hallway</button>
+                <style>
+                    @keyframes cardGlow {
+                        from { color: #fff; text-shadow: 0 0 10px #3498db; }
+                        to { color: #3498db; text-shadow: 0 0 20px #fff; }
+                    }
+                </style>`; 
             return; 
         }
         
@@ -515,8 +569,18 @@ function renderGameRoom(c) {
 function renderChemistry(c) {
         state.discovered.push('door6');
         
-        if(state.solved.includes('chem')) { 
-            c.innerHTML = `<h2>CHEMISTRY</h2><div class="solved-text">F</div><button onclick="goTo('hallway')">Return to Hallway</button>`; 
+if(state.solved.includes('chem')) { 
+            c.innerHTML = `
+                <h2>CHEMISTRY</h2>
+                <div class="solved-text" style="animation: glow 2s infinite alternate;">F</div>
+                <p>As the purple and orange liquids settle, a precipitate forms. It appears to form a letter...</p>
+                <button onclick="goTo('hallway')">Return to Hallway</button>
+                <style>
+                    @keyframes glow {
+                        from { text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 15px var(--md-primary); }
+                        to { text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px var(--md-primary); }
+                    }
+                </style>`; 
             return; 
         }
 
