@@ -105,7 +105,6 @@
 
 <div id="modal" onclick="this.style.display='none'">
     <div style="text-align:center;">
-        <p>CAESAR CIPHER</p>
         <img src="https://via.placeholder.com/400x400?text=CAESAR+CIPHER+IMAGE" alt="Cipher">
         <p style="font-size:0.8em;">(Click anywhere to close)</p>
     </div>
@@ -238,20 +237,72 @@
         });
     }
 
-    function renderCell(container) {
+function renderCell(container) {
+        state.discovered.push('door5');
+        
         if (state.solved.includes('cell')) {
-            container.innerHTML = `<h2>THE CELL</h2><div class="solved-text">P</div><button onclick="goTo('hallway')">Return</button>`;
+            container.innerHTML = `
+                <h2>THE CELL</h2>
+                <div class="solved-text">P</div>
+                <p>The iron bars open! As you tiptoe out of the room, you notice the strange lock displays a letter.</p>
+                <button onclick="goTo('hallway')">Go to Hallway</button>`;
             return;
         }
+
         let inputs = [];
-        container.innerHTML = `<h2>THE CELL</h2><p>Tracklist Note Found...</p><pre style="font-size:0.7em; background:#111;">1. Castle\n2. "Hold Me ____"\n3. "New Americana"\n4. "Drive"\n4. "Drive"\n...</pre><div id="cd" style="height:30px; border:1px solid #444; margin:10px;"></div><button onclick="checkCell()">SUBMIT</button><button onclick="goTo('cell')">RESET</button>`;
+        container.innerHTML = `
+            <h2>THE CELL</h2>
+            <p>As the guard marches back out of the hall, you take a moment to take in your new surroundings. Ther cell is damp and clammy and you wish you brought a sweater. But you realize there's no time to feel cold! You have to figure out how to get out of here and back to your people!</p>
+            <p>There doesn't seem to be much in the cell that can help you. Luckily, as the guard was dragging you down the hallway, you managed to sneak a crumpled scrap of paper out of his pocket./p>
+            
+            <pre style="font-size:0.8rem; background:#111; padding: 15px; border-radius: 8px; border: 1px solid #333; display: inline-block; text-align: left; line-height: 1.4; color: #aaa;">
+1. Castle
+2. "Hold Me ____"
+3. "New Americana"
+4. "Drive"
+4. "Drive"
+6. "Colors"
+7. "Coming ____"
+8. "Haunting"
+9. "_______"
+10. "Young God"
+11. "Ghost"</pre>
+
+            <p style="margin-top: 20px;">The lock on the door is not typical. It seems to respond to a wide range of inputs...</p>
+            <div id="cd" style="height:40px; border-bottom: 2px solid var(--md-primary); margin:20px auto; width: 80%; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; color: var(--md-primary); font-weight: bold; letter-spacing: 3px;"></div>
+            
+            <button onclick="checkCell()">SUBMIT</button>
+            <button class="secondary" onclick="goTo('cell')">RESET</button>`;
+
+        // Capture keyboard events
         window.onkeydown = (e) => { 
+            // Prevent scrolling with arrows while playing
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+
+            let displayChar = e.key;
+            if (e.key === "ArrowDown") displayChar = "↓";
+            if (e.key === "Control") displayChar = "CTRL";
+            if (e.key === "ArrowUp") displayChar = "↑";
+            if (e.key === "ArrowLeft") displayChar = "←";
+            if (e.key === "ArrowRight") displayChar = "→";
+
             inputs.push(e.key); 
-            document.getElementById('cd').innerText = inputs.join(' '); 
+            document.getElementById('cd').innerText = inputs.slice(-10).join(' '); // Show last 10 inputs
         };
+
         window.checkCell = () => {
-            if (inputs.slice(-3).join(',') === "ArrowDown,ArrowDown,Control") { state.solved.push('cell'); render(); }
-            else { alert("Nothing."); inputs=[]; render(); }
+            // Check the last 3 inputs for Down, Down, Control
+            const secret = inputs.slice(-3).join(',');
+            if (secret === "ArrowDown,ArrowDown,Control") { 
+                state.solved.push('cell'); 
+                render(); 
+            } else { 
+                alert("The lock pulses with a cold, red light. Nothing happens."); 
+                inputs = []; 
+                document.getElementById('cd').innerText = "";
+            }
         };
     }
 
@@ -520,16 +571,60 @@ function renderChemistry(c) {
         };
     }
 
-    function renderStatueRoom(c) {
+function renderStatueRoom(c) {
         state.discovered.push('door7');
-        if(state.solved.includes('statue')) { c.innerHTML = `<h2>STATUE ROOM</h2><div class="solved-text">K</div><button onclick="goTo('hallway')">Return to Hallway</button>`; return; }
-        c.innerHTML = `<h2>STATUE ROOM</h2><div class="statue-grid">${state.statues.map((r,i)=>`<div onclick="state.statues[${i}]=(state.statues[${i}]+90)%360;render()" class="muse" style="transform:rotate(${r}deg)">🗽</div>`).join('')}</div><button onclick="checkStat()">SUBMIT</button><br><button onclick="goTo('hallway')">Return to Hallway</button>`;
+        
+        if(state.solved.includes('statue')) { 
+            c.innerHTML = `<h2>STATUE ROOM</h2><div class="solved-text">K</div><p>Lonely is the muse.</p><button onclick="goTo('hallway')">Return</button>`; 
+            return; 
+        }
+
+        // Configuration of men for each statue (N, S, E, W)
+        const menConfig = [
+            ['S', 'E', 'W'], // Only North is safe
+            ['N', 'E', 'W'], // Only South is safe
+            ['N', 'S', 'E'], // Only West is safe
+            ['N', 'E']       // North and East are blocked; South and West are safe
+        ];
+
+        c.innerHTML = `
+            <h2>STATUE ROOM</h2>
+            <p>In each corner of the room, there is a female statue, surrounded by male statues. It almost like is a muse, surrounded by the stony gaze of her onlookers.</p>
+            <div class="statue-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 60px; justify-items: center; margin: 40px auto; max-width: 700px;">
+                ${state.statues.map((rotation, i) => `
+                    <div class="statue-group" style="position: relative; width: 280px; height: 280px; background: rgba(255,255,255,0.01); border-radius: 50%;">
+                        ${renderMen(menConfig[i])}
+                        <img src="images/muse.png" 
+                             onclick="state.statues[${i}]=(state.statues[${i}]+90)%360; render();" 
+                             style="position: absolute; top: 90px; left: 90px; width: 100px; transform: rotate(${rotation}deg); cursor: pointer; transition: transform 0.5s ease;">
+                    </div>
+                `).join('')}
+            </div>
+            <button onclick="checkStat()">SUBMIT</button>
+            <button class="secondary" onclick="goTo('hallway')">Return</button>`;
+
+        function renderMen(list) {
+            const p = { N: "top:-20px;left:110px", S: "bottom:-20px;left:110px", W: "top:110px;left:-20px", E: "top:110px;right:-20px" };
+            return list.map(dir => `<img src="images/man.png" style="position:absolute; width:60px; ${p[dir]}; filter:grayscale(100%); opacity:0.7;">`).join('');
+        }
+
         window.checkStat = () => {
-            if(state.statues[0]===180 && state.statues[1]===0 && state.statues[2]===90 && state.statues[3]===0) { state.solved.push('statue'); render(); }
-            else alert("Cold.");
+            const isSafe = state.statues.every((rotation, i) => {
+                // Map rotation to the direction the Muse is facing
+                // 0=South, 90=West, 180=North, 270=East
+                const facing = { 0: 'S', 90: 'W', 180: 'N', 270: 'E' }[rotation];
+                // She is safe if her 'facing' direction has NO man
+                return !menConfig[i].includes(facing);
+            });
+
+            if (isSafe) {
+                state.solved.push('statue');
+                render();
+            } else {
+                alert("You could swear you heard a muse statue sigh...");
+            }
         };
     }
-
     loadProgress();
     render();
 </script>
